@@ -6,7 +6,6 @@ Created on Wed May 19 14:51:18 2021
 """
 
 import numpy as np
-from statistics import mean
 import pandas
 import re
 from bpemb import BPEmb
@@ -16,7 +15,6 @@ import sklearn.preprocessing
 from sklearn.linear_model import LinearRegression
 from fastapi import FastAPI
 import mysql.connector
-from fastapi import FastAPI
 from pydantic import BaseModel
 
 mydb = mysql.connector.connect(
@@ -46,13 +44,20 @@ def index():
 @app.post('/user_id/{i}')
 def read_index(i: int):
     print(i)
+    mycursor.execute("SELECT count(*) from predicted_rolemodels")
+    iid = mycursor.fetchall()
+    if i>iid:
+        return "No user found, please make new entry"
     value = mycursor.execute("SELECT * FROM predicted_rolemodels WHERE id = i")
     value = mycursor.fetchall()
     return value
 
 @app.post('/model_prediction')
 def model_predict(user : User):
-    return user
+    id,r1,r2,r3,r4,r5 = myfunction(user.Name, user.address, user.gender, user.interest, user.specialization, user.hobbies)
+    pred = {'id' : id, 'Name' : user.Name, 'Role Model 1' : r1, 'Role Model 2' : r2, 'Role Model 3' : r3, 'Role Model 4' : r4, 'Role Model 5' : r5}
+    #print(mycursor.last_insert_id())
+    return pred
 
 def get_location(address):
     geolocator = Nominatim(user_agent="Ayushi")
@@ -164,14 +169,14 @@ def get_place_gender(df_user, df_role):
     temp_gender = np.array(temp_gender)
     return temp_location, temp_gender
 
-def main():
-    print("Enter following details for user")
-    Name = input("Enter name : ")
-    address = input("Enter address : ")
-    gender = input("Enter gender : ")
-    area_of_interest = input("Enter area of interest : ")
-    specialization = input("Enter specialization : ")
-    hobbies = input("Enter hobbies : ")
+def myfunction(Name,address,gender,area_of_interest,specialization,hobbies):
+    #print("Enter following details for user")
+    #Name = input("Enter name : ")
+    #address = input("Enter address : ")
+    #gender = input("Enter gender : ")
+    #area_of_interest = input("Enter area of interest : ")
+    #specialization = input("Enter specialization : ")
+    #hobbies = input("Enter hobbies : ")
     
     user = [area_of_interest, specialization, hobbies]
     user = extracting_words(user)
@@ -210,34 +215,26 @@ def main():
     role3 = dataf_role['Role Model'][sorted_index[2]]
     role4 = dataf_role['Role Model'][sorted_index[3]]
     role5 = dataf_role['Role Model'][sorted_index[4]]
-    '''mydb = mysql.connector.connect(
-        host="localhost",
-        user="root",
-        password="Ayushi23@",
-        database="user_role_model"
-        )
 
-    mycursor = mydb.cursor()'''
     #mycursor.execute("CREATE DATABASE user_role_model")
     #mycursor.execute("SHOW DATABASES")
     #mycursor.execute("CREATE TABLE predicted_rolemodels (id INT AUTO_INCREMENT PRIMARY KEY,name VARCHAR(255), role_model1 VARCHAR(255), role_model2 VARCHAR(255), role_model3 VARCHAR(255), role_model4 VARCHAR(255), role_model5 VARCHAR(255))")
     #mycursor.execute("SHOW TABLES")
     #for x in mycursor:
     #    print(x)
-    #sql = "INSERT INTO predicted_rolemodels (name, role_model1, role_model2, role_model3, role_model4, role_model5) VALUES (%s, %s, %s, %s, %s, %s)"
+    sql = "INSERT INTO predicted_rolemodels (name, role_model1, role_model2, role_model3, role_model4, role_model5) VALUES (%s, %s, %s, %s, %s, %s)"
     #val = ("Ayushi Gupta","Bill gates", "AR Rahman", "Benedict Cumberbatch", "J.K Rowling", "Amitabh Bachan")
-    #val = (Name, role1, role2, role3, role4, role5)
-    #mycursor.execute(sql, val)
+    val = (Name, role1, role2, role3, role4, role5)
+    mycursor.execute(sql, val)
 
-    #mydb.commit()
+    mydb.commit()
 
-    #print(mycursor.rowcount, "record inserted.")
-    mycursor.execute("SELECT * FROM predicted_rolemodels")
+    print(mycursor.rowcount, "record inserted.")
+    #mycursor.execute("SELECT * FROM predicted_rolemodels")
 
-    myresult = mycursor.fetchall()
-    for x in myresult:
-        print(x)
-
-    
-if __name__ == "__main__":
-    main()
+    #myresult = mycursor.fetchall()
+    #for x in myresult:
+    #    print(x)
+    mycursor.execute("SELECT count(*) from predicted_rolemodels")
+    iid = mycursor.fetchall()
+    return iid,role1,role2,role3,role4,role5
