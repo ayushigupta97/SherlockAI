@@ -16,7 +16,43 @@ import sklearn.preprocessing
 from sklearn.linear_model import LinearRegression
 from fastapi import FastAPI
 import mysql.connector
-#from pydantic import BaseModel
+from fastapi import FastAPI
+from pydantic import BaseModel
+
+mydb = mysql.connector.connect(
+        host="localhost",
+        user="root",
+        password="Ayushi23@",
+        database="user_role_model"
+        )
+
+mycursor = mydb.cursor()
+app = FastAPI()
+
+class User(BaseModel):
+    Name : str
+    address : str
+    gender : str
+    interest : str
+    specialization : str
+    hobbies : str
+
+@app.get('/')
+def index():
+    value = mycursor.execute("SELECT * FROM predicted_rolemodels WHERE id=(SELECT max(id) FROM predicted_rolemodels)")
+    value = mycursor.fetchall()
+    return value
+
+@app.post('/user_id/{i}')
+def read_index(i: int):
+    print(i)
+    value = mycursor.execute("SELECT * FROM predicted_rolemodels WHERE id = i")
+    value = mycursor.fetchall()
+    return value
+
+@app.post('/model_prediction')
+def model_predict(user : User):
+    return user
 
 def get_location(address):
     geolocator = Nominatim(user_agent="Ayushi")
@@ -110,7 +146,7 @@ def operation(user_vector, role_vector):
         res = np.dot(user_vector,np.transpose(role_vector[j]))
         # print(user_vector[i].shape, role_vector[j].shape, res.shape)
         res = res.max(axis = 1)
-        m.append(mean(sorted(res, reverse = True)[:2]))
+        m.append(np.mean(sorted(res, reverse = True)[:2]))
     m=np.array(m)
     return m
 
@@ -130,7 +166,7 @@ def get_place_gender(df_user, df_role):
 
 def main():
     print("Enter following details for user")
-    name = input("Enter name : ")
+    Name = input("Enter name : ")
     address = input("Enter address : ")
     gender = input("Enter gender : ")
     area_of_interest = input("Enter area of interest : ")
@@ -168,15 +204,20 @@ def main():
     model, ytrain = LR_algo_training(result)
     result = LR_algo_prediction(model, result, ytrain)
     sorted_index = heapq.nlargest(5, range(len(result)), key=result.__getitem__)
-    print("For {0} the best suited role models are {1}, {2}, {3}, {4} and {5}\n".format(name,dataf_role['Role Model'][sorted_index[0]],dataf_role['Role Model'][sorted_index[1]],dataf_role['Role Model'][sorted_index[2]],dataf_role['Role Model'][sorted_index[3]],dataf_role['Role Model'][sorted_index[4]]))
-    mydb = mysql.connector.connect(
+    #print("For {0} the best suited role models are {1}, {2}, {3}, {4} and {5}\n".format(name,dataf_role['Role Model'][sorted_index[0]],dataf_role['Role Model'][sorted_index[1]],dataf_role['Role Model'][sorted_index[2]],dataf_role['Role Model'][sorted_index[3]],dataf_role['Role Model'][sorted_index[4]]))
+    role1 = dataf_role['Role Model'][sorted_index[0]]
+    role2 = dataf_role['Role Model'][sorted_index[1]]
+    role3 = dataf_role['Role Model'][sorted_index[2]]
+    role4 = dataf_role['Role Model'][sorted_index[3]]
+    role5 = dataf_role['Role Model'][sorted_index[4]]
+    '''mydb = mysql.connector.connect(
         host="localhost",
         user="root",
         password="Ayushi23@",
         database="user_role_model"
         )
 
-    mycursor = mydb.cursor()
+    mycursor = mydb.cursor()'''
     #mycursor.execute("CREATE DATABASE user_role_model")
     #mycursor.execute("SHOW DATABASES")
     #mycursor.execute("CREATE TABLE predicted_rolemodels (id INT AUTO_INCREMENT PRIMARY KEY,name VARCHAR(255), role_model1 VARCHAR(255), role_model2 VARCHAR(255), role_model3 VARCHAR(255), role_model4 VARCHAR(255), role_model5 VARCHAR(255))")
@@ -185,6 +226,7 @@ def main():
     #    print(x)
     #sql = "INSERT INTO predicted_rolemodels (name, role_model1, role_model2, role_model3, role_model4, role_model5) VALUES (%s, %s, %s, %s, %s, %s)"
     #val = ("Ayushi Gupta","Bill gates", "AR Rahman", "Benedict Cumberbatch", "J.K Rowling", "Amitabh Bachan")
+    #val = (Name, role1, role2, role3, role4, role5)
     #mycursor.execute(sql, val)
 
     #mydb.commit()
